@@ -1,0 +1,119 @@
+# CI fuer das SQL-Labor.
+# Jeder Push und Pull Request baut das Kit und prueft es unter Linux
+# (tests/linux_test.sh); die Zip haengt 14 Tage als Artefakt am Lauf.
+# Ein Tag vX.Y.Z legt zusaetzlich ein Release an: Zip, Quellarchive von MariaDB
+# und phpMyAdmin (GPLv2 §3) und SHA256SUMS.txt. Der Tag muss zu VERSION passen.
+# Nur GitHub-Runner; Schreibrechte hat allein der Release-Job bei Tags.
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  kit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Tag passt zu VERSION
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          version=$(tr -d '[:space:]' < VERSION)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME passt nicht zu VERSION $version"
+            exit 1
+          fi
+
+      - name: Kit bauen
+        env:
+          QUELLEN: ${{ startsWith(github.ref, 'refs/tags/v') && '--quellen' || '' }}
+        run: ./build.sh $QUELLEN
+
+      - name: Linux-Test
+        run: ./tests/linux_test.sh
+
+      - name: Zip als Artefakt
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: kit-${{ github.sha }}
+          path: dist/SQL-Labor-*.zip
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Quellarchive als Artefakt
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: quellen-${{ github.sha }}
+          path: dist/quellen/
+          retention-days: 1
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: kit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: '*-${{ github.sha }}'
+          path: dist/release
+          merge-multiple: true
+
+      - name: Release-Notizen und Pruefsummen
+        run: |
+          version=$(tr -d '[:space:]' < VERSION)
+          mariadb=$(sed -n 's/^MARIADB_VERSION=//p' build.sh)
+          php=$(sed -n 's/^PHP_VERSION=//p' build.sh)
+          pma=$(sed -n 's/^PMA_VERSION=//p' build.sh)
+          (cd dist/release && sha256sum -- * > SHA256SUMS.txt && cat SHA256SUMS.txt)
+          vorher=$(git describe --tags --abbrev=0 "$GITHUB_REF_NAME^" 2>/dev/null || true)
+          {
+            echo "SQL-Labor $version von Tobias Weber."
+            echo
+            echo "Für Lehrkräfte: \`SQL-Labor-$version.zip\` herunterladen, vor dem Entpacken in den Eigenschaften „Zulassen“ anhaken, dann \`START.bat\`. Anleitung in \`LIESMICH.txt\`."
+            echo
+            echo "Enthalten: MariaDB $mariadb, PHP ${php%-*}, phpMyAdmin $pma, Beispieldatenbank northwind (Microsoft, MIT)."
+            echo "Die Quellarchive von MariaDB und phpMyAdmin (GPLv2) liegen diesem Release bei."
+            echo
+            echo "Änderungen:"
+            if [ -n "$vorher" ]; then
+              git log --pretty='- %s' "$vorher..$GITHUB_REF_NAME"
+            else
+              git log --pretty='- %s' "$GITHUB_REF_NAME"
+            fi
+          } > dist/release-notes.md
+          cat dist/release-notes.md
+
+      - name: Release anlegen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          version=$(tr -d '[:space:]' < VERSION)
+          gh release create "$GITHUB_REF_NAME" dist/release/* \
+            --title "SQL-Labor $version" \
+            --notes-file dist/release-notes.md \
+            --verify-tag

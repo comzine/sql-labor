@@ -1,0 +1,59 @@
+SQL-Labor: Urheber und Lizenzen
+===============================
+
+SQL-Labor
+  Zusammengestellt und programmiert von Tobias Weber.
+  Copyright (c) 2026 Tobias Weber.
+  Eigene Dateien (START.bat, STOPP.bat, NORTHWIND-ZURUECKSETZEN.bat,
+  TEST.bat, app\env.bat, app\router.php, app\phpmyadmin\config.inc.php,
+  app\phpmyadmin\config.footer.inc.php, app\phpmyadmin\lizenz.html,
+  app\sql\init.sql, app\php\php.ini, LIESMICH.txt, diese Datei):
+  MIT-Lizenz, Text in app\lizenzen\SQL-Labor-LICENSE.txt.
+  Weitergabe und Änderung erlaubt, der Hinweis auf Tobias Weber und
+  die Lizenz müssen erhalten bleiben.
+  Projektseite: https://github.com/comzine/sql-labor
+
+Quelltexte (GPLv2 §3): Jedem Release auf
+  https://github.com/comzine/sql-labor/releases/tag/v@KIT_VERSION@
+liegen neben der Zip die vollständigen Quellarchive der mitgelieferten
+GPL-Programme bei (mariadb-@MARIADB_VERSION@.tar.gz, phpMyAdmin-@PMA_VERSION@-source.tar.xz).
+Wer das Kit weitergibt, gibt diesen Hinweis mit.
+
+Mitgelieferte Fremdprogramme, jeweils unverändert und nur gekürzt:
+
+MariaDB Server @MARIADB_VERSION@ (Ordner app\mariadb)
+  Lizenz: GNU General Public License, Version 2 (app\lizenzen\MariaDB-COPYING.txt),
+  enthaltene Bibliotheken: app\lizenzen\MariaDB-THIRDPARTY.txt
+  Quelltext: mariadb-@MARIADB_VERSION@.tar.gz im Release (s. o.), auch
+  https://github.com/MariaDB/server/tree/mariadb-@MARIADB_VERSION@
+  Gekürzt: nur Server, Client und Werkzeuge des Kits, keine Server-Plugins.
+  Binärpaket: https://downloads.mariadb.org/rest-api/mariadb/@MARIADB_VERSION@/mariadb-@MARIADB_VERSION@-winx64.zip
+
+PHP @PHP_VERSION@ (Ordner app\php, ohne app\php\php.ini)
+  Lizenz: The PHP License, Version 3.01 (app\lizenzen\PHP-LICENSE.txt)
+  Quelltext: https://github.com/php/php-src
+  Binärpaket: https://windows.php.net/download/
+
+Microsoft Visual C++ Laufzeit (vcruntime140*.dll, msvcp140*.dll, concrt140.dll)
+  Aus dem MariaDB-Paket übernommen, verteilbare Laufzeitdateien von Microsoft.
+
+phpMyAdmin @PMA_VERSION@ (Ordner app\phpmyadmin, gekürzt auf Deutsch; ohne
+config.inc.php, config.footer.inc.php und lizenz.html, die zum SQL-Labor gehören)
+  Lizenz: GNU General Public License, Version 2 (app\lizenzen\phpMyAdmin-LICENSE.txt),
+  enthaltene Bibliotheken: app\phpmyadmin\vendor
+  Quelltext: phpMyAdmin-@PMA_VERSION@-source.tar.xz im Release (s. o.), auch
+  https://github.com/phpmyadmin/phpmyadmin/tree/RELEASE_@PMA_VERSION_TAG@
+
+Beispieldatenbank northwind (app\sql\northwind.sql)
+  Northwind ist die Beispieldatenbank von Microsoft.
+  Quelle: https://github.com/microsoft/sql-server-samples, Datei
+  samples/databases/northwind-pubs/instnwnd.sql (Commit 2f85f37).
+  Lizenz: MIT License, Copyright (c) Microsoft Corporation; der Wortlaut
+  steht im Kopf von northwind.sql.
+  Für MySQL/MariaDB umgewandelt mit tools/northwind_aus_microsoft.py (im Repo);
+  Tabelle `Order Details` heißt hier `orderdetails`, Werte wie in der älteren
+  Access-Fassung von Northwind (Einzelheiten im Kopf von northwind.sql).
+
+Marken: MySQL ist eine eingetragene Marke der Oracle Corporation, MariaDB eine
+Marke der MariaDB Foundation. Das SQL-Labor ist kein Produkt dieser
+Unternehmen und nutzt die Namen nur beschreibend.

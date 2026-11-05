@@ -1,0 +1,47 @@
+name: Fehler melden
+description: Etwas startet nicht oder verhält sich falsch.
+labels: [fehler]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Datenschutz:** `testprotokoll.txt` enthält Windows-Benutzernamen, PC-Namen und
+        Netzlaufwerke der Schule. Diese Zeilen vor dem Einfügen entfernen oder durch
+        `xxx` ersetzen (Zeilen „PC:“, „Benutzer:“, „Kit-Ordner:“, „HOME:“ und den
+        Abschnitt „net use“). Keine Namen von Schülerinnen und Schülern posten.
+
+        Sicherheitslücken bitte nicht hier, sondern über „Security → Report a vulnerability“.
+  - type: input
+    id: version
+    attributes:
+      label: Version des SQL-Labors
+      description: Steht im Startfenster und in LIESMICH.txt, z. B. 0.5.0
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows-Version
+      description: z. B. Windows 11, Build 26200 (steht im Testprotokoll unter „Microsoft Windows [Version …]“)
+  - type: dropdown
+    id: ort
+    attributes:
+      label: Wo liegt der Kit-Ordner?
+      options:
+        - lokales Laufwerk (C:, D:)
+        - Home-Laufwerk (Netz)
+        - Tauschlaufwerk (Netz, schreibgeschützt)
+        - USB-Stick
+        - anderes
+  - type: textarea
+    id: was
+    attributes:
+      label: Was passiert, was hast du erwartet?
+    validations:
+      required: true
+  - type: textarea
+    id: protokoll
+    attributes:
+      label: Testprotokoll (anonymisiert)
+      description: Inhalt von testprotokoll.txt nach TEST.bat, ohne Benutzer-, PC- und Laufwerksnamen.
+      render: text
