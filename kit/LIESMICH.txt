@@ -3,6 +3,7 @@ SQL-Labor @KIT_VERSION@ von Tobias Weber
 
 Portable MariaDB @MARIADB_VERSION@ (LTS) mit phpMyAdmin @PMA_VERSION@ im Browser und der
 Beispieldatenbank northwind; MySQL Workbench kann sich ebenfalls verbinden.
+Ein zweiter Webserver liefert eigene HTML- und PHP-Seiten aus (Webordner).
 Keine Installation, keine Adminrechte, kein XAMPP. Alles lauscht nur auf
 127.0.0.1: Von außen ist nichts erreichbar, jeder PC hat seine eigene
 Datenbank.
@@ -21,12 +22,38 @@ START.bat                    Datenbank und phpMyAdmin starten, Browser
 STOPP.bat                    Alles beenden. Die Daten bleiben erhalten.
 NORTHWIND-ZURUECKSETZEN.bat  northwind auf den Ausgangsstand zurücksetzen
                              (fragt vorher nach).
+WEB.bat                      Webordner und eigene Seiten im Browser öffnen.
 
 phpMyAdmin im Browser: http://127.0.0.1:18080/
 SQL eingeben: links northwind anklicken, oben Reiter "SQL".
 
 
-2. MySQL Workbench
+2. Eigene Webseiten (HTML, PHP, MySQL)
+--------------------------------------
+
+START.bat startet einen zweiten Webserver für eigene Seiten:
+
+  im Browser:  http://127.0.0.1:18000/
+  Ordner:      Dokumente\SQL-Labor-Web   (WEB.bat öffnet ihn)
+
+Beim ersten Start legt START.bat den Ordner mit einer Startseite (Liste der
+Dateien, Test der Datenbank), hallo.html und dem PDO-Beispiel
+northwind_kunden.php an. Danach fasst START.bat den Ordner nie wieder an:
+Eigene Dateien werden nicht überschrieben.
+
+- Datei hineinlegen, z. B. seite.php, im Browser aufrufen:
+  http://127.0.0.1:18000/seite.php
+- Unterordner ohne index.php oder index.html zeigen eine Dateiliste.
+- PHP-Fehlermeldungen erscheinen im Browser (zum Lernen gewollt).
+- Verbindung zur Datenbank aus PHP:
+    $db = new PDO('mysql:host=127.0.0.1;port=13306;dbname=northwind;charset=utf8mb4', 'sus', 'sus');
+    $db = new mysqli('127.0.0.1', 'sus', 'sus', 'northwind', 13306);
+  Port 13306 nicht vergessen, 3306 ist es hier nicht.
+- Anderer Ordner (z. B. auf dem Home-Laufwerk): eine Datei WEBORDNER.txt
+  neben START.bat anlegen, in der ersten Zeile den Ordner, z. B. H:\Web
+
+
+3. MySQL Workbench
 ------------------
 
 Workbench ist auf den Schul-PCs installiert und kann statt phpMyAdmin
@@ -45,7 +72,7 @@ DML, DDL, Fremdschlüssel und Transaktionen gehen wie gewohnt; einzelne
 Workbench-Funktionen für die MySQL-Verwaltung können fehlen.
 
 
-3. Wenn etwas klemmt
+4. Wenn etwas klemmt
 --------------------
 
 START.bat prüft den Datenordner selbst:
@@ -61,7 +88,7 @@ Hilft das nicht: TEST.bat ausführen und testprotokoll.txt der Lehrkraft
 zeigen.
 
 
-4. Wo die Daten liegen
+5. Wo die Daten liegen
 ----------------------
 
 Standard: %LOCALAPPDATA%\SQL-Labor (lokale Platte C:, schnell).
@@ -76,7 +103,7 @@ den sie schreiben darf (LOAD DATA INFILE, SELECT ... INTO OUTFILE), z. B.
 für einen CSV-Import. START.bat zeigt den genauen Pfad an.
 
 
-5. Test an einem Schul-PC (Lehrkraft, ca. 5 Minuten)
+6. Test an einem Schul-PC (Lehrkraft, ca. 5 Minuten)
 ----------------------------------------------------
 
 1. Zip auf den Schul-PC holen. Wurde sie aus dem Internet oder Moodle
@@ -89,18 +116,21 @@ für einen CSV-Import. START.bat zeigt den genauen Pfad an.
    - ob PHP mit mysqli läuft,
    - ob die Datenbank auf der lokalen Platte, im Kit-Ordner und im
      Home-Laufwerk arbeitet (InnoDB schreiben und lesen),
-   - ob der Webserver antwortet und fremde Host-Namen abweist.
+   - ob der Webserver antwortet und fremde Host-Namen abweist,
+   - ob der Webserver für eigene Seiten läuft und der Webordner
+     angelegt werden kann.
 4. Notieren, ob eine Windows-Sicherheitswarnung kam (Firewall,
    "Der Computer wurde durch Windows geschützt").
 5. testprotokoll.txt mitbringen. Sie liegt im Kit-Ordner oder, wenn der
    schreibgeschützt ist, im Benutzerprofil (testprotokoll-sql-labor.txt).
 
 
-6. Technik
+7. Technik
 ----------
 
-Ports:        13306 (MariaDB), 18080 (phpMyAdmin), beide nur 127.0.0.1;
-              TEST.bat nutzt zusätzlich 13307 und 18081.
+Ports:        13306 (MariaDB), 18080 (phpMyAdmin), 18000 (eigene Seiten),
+              alle nur 127.0.0.1; TEST.bat nutzt zusätzlich 13307, 18081
+              und 18082.
 Schutz:       app\router.php beantwortet nur Anfragen an 127.0.0.1 oder
               localhost (gegen fremde Webseiten per DNS-Rebinding);
               Dateizugriffe per SQL nur im Ordner dateien; keine
@@ -113,15 +143,16 @@ Bestandteile: app\mariadb     MariaDB @MARIADB_VERSION@ winx64 (gekürzt: Server
                               mariadb-install-db, mysqld.exe für
                               dessen Bootstrap)
               app\php         PHP @PHP_VERSION@ NTS x64 (gekürzt: php.exe, mysqli,
-                              mbstring), Visual-C++-Laufzeit aus dem
-                              MariaDB-Paket
+                              pdo_mysql, mbstring, fileinfo),
+                              Visual-C++-Laufzeit aus dem MariaDB-Paket
+              app\web-vorlage Startdateien für den Webordner
               app\phpmyadmin  phpMyAdmin @PMA_VERSION@ (nur Deutsch), angemeldet
                               über config.inc.php, Konfigurationsspeicher
                               in der Datenbank phpmyadmin
               app\sql         northwind.sql, init.sql (Benutzer)
 
 
-7. Urheber und Lizenz
+8. Urheber und Lizenz
 ---------------------
 
 SQL-Labor ist zusammengestellt und programmiert von Tobias Weber,

@@ -5,7 +5,8 @@ SQL-Labor
   Zusammengestellt und programmiert von Tobias Weber.
   Copyright (c) 2026 Tobias Weber.
   Eigene Dateien (START.bat, STOPP.bat, NORTHWIND-ZURUECKSETZEN.bat,
-  TEST.bat, app\env.bat, app\router.php, app\phpmyadmin\config.inc.php,
+  TEST.bat, WEB.bat, app\env.bat, app\webordner.bat, app\router.php,
+  app\web-vorlage\*, app\phpmyadmin\config.inc.php,
   app\phpmyadmin\config.footer.inc.php, app\phpmyadmin\lizenz.html,
   app\sql\init.sql, app\php\php.ini, LIESMICH.txt, diese Datei):
   MIT-Lizenz, Text in app\lizenzen\SQL-Labor-LICENSE.txt.

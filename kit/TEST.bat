@@ -15,6 +15,8 @@ set "E_KIT=?"
 set "E_HOME=nicht getestet"
 set "E_WEB=?"
 set "E_HOST=?"
+set "E_SUSWEB=?"
+set "E_WEBORDNER=?"
 
 call :log "Zeit: %DATE% %TIME%"
 call :log "PC: %COMPUTERNAME%   Benutzer: %USERDOMAIN%\%USERNAME%"
@@ -46,6 +48,8 @@ call :log "mariadbd.exe: %E_EXE%"
 "%PHPDIR%\php.exe" -c "%PHPDIR%\php.ini" -d extension_dir="%PHPDIR%\ext" -m 2>> "%LOG%" | find /i "mysqli" >nul
 if errorlevel 1 set "E_PHP=FEHLER (php.exe oder mysqli laeuft nicht)"
 if not errorlevel 1 set "E_PHP=OK"
+"%PHPDIR%\php.exe" -c "%PHPDIR%\php.ini" -d extension_dir="%PHPDIR%\ext" -m 2>> "%LOG%" | find /i "pdo_mysql" >nul
+if errorlevel 1 set "E_PHP=FEHLER (pdo_mysql fehlt)"
 call :log "php.exe mit mysqli: %E_PHP%"
 
 call :log ""
@@ -85,6 +89,26 @@ if "%CODE%"=="403" set "E_HOST=OK"
 if not "%CODE%"=="403" set "E_HOST=FEHLER (HTTP %CODE% statt 403)"
 call :log "Fremder Host-Kopf abgewiesen: %E_HOST%"
 taskkill /fi "WINDOWTITLE eq SQL-Labor Webtest*" /f >nul 2>&1
+
+rem Webserver fuer eigene Seiten: statische Datei aus der Vorlage auf Port 18082
+start "SQL-Labor Webtest SuS" /min "%PHPDIR%\php.exe" -c "%PHPDIR%\php.ini" -d extension_dir="%PHPDIR%\ext" -d display_errors=1 -S 127.0.0.1:18082 -t "%APP%\web-vorlage" "%APP%\router.php"
+ping -n 3 127.0.0.1 >nul
+set "CODE=000"
+for /f %%c in ('curl.exe -s -o nul -w "%%{http_code}" --max-time 5 "http://127.0.0.1:18082/hallo.html" 2^>nul') do set "CODE=%%c"
+if "%CODE%"=="200" set "E_SUSWEB=OK"
+if not "%CODE%"=="200" set "E_SUSWEB=FEHLER (HTTP %CODE%)"
+call :log "Webserver fuer eigene Seiten auf 127.0.0.1:18082: %E_SUSWEB%"
+
+rem Webordner: wird er gefunden und ist er beschreibbar?
+call "%APP%\webordner.bat"
+call :log "Webordner: %WEBORDNER%"
+set "WEBBASIS=%WEBORDNER%\.."
+(echo test) > "%WEBBASIS%\sqllabor-schreibtest.txt" 2>nul
+if errorlevel 1 set "E_WEBORDNER=FEHLER (uebergeordneter Ordner nicht beschreibbar)"
+if not errorlevel 1 set "E_WEBORDNER=OK"
+del "%WEBBASIS%\sqllabor-schreibtest.txt" >nul 2>&1
+call :log "Webordner anlegbar: %E_WEBORDNER%"
+taskkill /fi "WINDOWTITLE eq SQL-Labor Webtest*" /f >nul 2>&1
 taskkill /im php.exe /f >nul 2>&1
 
 call :log ""
@@ -96,6 +120,8 @@ call :log "Daten im Kit-Ordner:      %E_KIT%"
 call :log "Daten im Home-Laufwerk:   %E_HOME%"
 call :log "Webserver:                %E_WEB%"
 call :log "Schutz vor DNS-Rebinding: %E_HOST%"
+call :log "Webserver eigene Seiten:  %E_SUSWEB%"
+call :log "Webordner anlegbar:       %E_WEBORDNER%"
 call :log ""
 call :log "Kam waehrend des Tests eine Windows-Sicherheitswarnung (Firewall, SmartScreen)? Bitte notieren."
 call :log "Protokoll: %LOG%"

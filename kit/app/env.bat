@@ -10,6 +10,8 @@ set "PHPDIR=%APP%\php"
 set "WEBROOT=%APP%\phpmyadmin"
 set "DB_PORT=13306"
 set "WEB_PORT=18080"
+rem Webserver fuer die eigenen Seiten der SuS (HTML, PHP), Ordner siehe webordner.bat
+set "SUS_PORT=18000"
 set "DB_USER=sus"
 set "DB_PASS=sus"
 

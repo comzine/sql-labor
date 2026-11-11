@@ -81,9 +81,29 @@ if not errorlevel 1 goto web
 :web
 rem Laeuft der Webserver schon?
 curl.exe -s -o nul --max-time 2 "http://127.0.0.1:%WEB_PORT%/lizenz.html" >nul 2>&1
-if not errorlevel 1 goto browser
+if not errorlevel 1 goto susweb
 start "SQL-Labor Web - nicht schliessen" /min "%PHPDIR%\php.exe" -c "%PHPDIR%\php.ini" -d extension_dir="%PHPDIR%\ext" -d session.save_path="%SQLLABOR_DATA%\sessions" -S 127.0.0.1:%WEB_PORT% -t "%WEBROOT%" "%APP%\router.php"
 ping -n 3 127.0.0.1 >nul
+
+:susweb
+rem Zweiter Webserver fuer die eigenen Seiten der SuS (HTML, PHP mit Datenbank).
+rem Ein neuer Webordner bekommt die Startdateien; vorhandene Dateien bleiben unberuehrt.
+call "%APP%\webordner.bat"
+if exist "%WEBORDNER%\" goto susweb_start
+echo  Lege den Webordner an: %WEBORDNER%
+mkdir "%WEBORDNER%" >nul 2>&1
+if not exist "%WEBORDNER%\" goto susweb_fehler
+xcopy "%APP%\web-vorlage\*" "%WEBORDNER%\" /e /i /q /y >nul
+:susweb_start
+curl.exe -s -o nul --max-time 2 "http://127.0.0.1:%SUS_PORT%/" >nul 2>&1
+if not errorlevel 1 goto browser
+start "SQL-Labor Webseiten - nicht schliessen" /min "%PHPDIR%\php.exe" -c "%PHPDIR%\php.ini" -d extension_dir="%PHPDIR%\ext" -d session.save_path="%SQLLABOR_DATA%\sessions" -d display_errors=1 -d display_startup_errors=1 -d error_reporting=E_ALL -S 127.0.0.1:%SUS_PORT% -t "%WEBORDNER%" "%APP%\router.php"
+ping -n 2 127.0.0.1 >nul
+goto browser
+
+:susweb_fehler
+echo  WARNUNG: Der Webordner %WEBORDNER% laesst sich nicht anlegen.
+echo  Der Webserver fuer eigene Seiten startet nicht (WEBORDNER.txt anlegen, siehe LIESMICH.txt).
 
 :browser
 start "" "http://127.0.0.1:%WEB_PORT%/"
@@ -92,6 +112,11 @@ echo  ======================================================================
 echo   SQL-Labor laeuft.
 echo.
 echo   phpMyAdmin im Browser:  http://127.0.0.1:%WEB_PORT%/
+echo.
+echo   Eigene Webseiten (HTML, PHP):  http://127.0.0.1:%SUS_PORT%/
+echo     Ordner: %WEBORDNER%
+echo     WEB.bat oeffnet Ordner und Browser. PHP-Verbindung zur Datenbank:
+echo     new PDO('mysql:host=127.0.0.1;port=%DB_PORT%;dbname=northwind;charset=utf8mb4', '%DB_USER%', '%DB_PASS%')
 echo.
 echo   MySQL Workbench: Verbindung einmal anlegen
 echo   (Plus-Zeichen neben "MySQL Connections"):
@@ -107,7 +132,7 @@ echo.
 echo   Dateien fuer LOAD DATA INFILE / INTO OUTFILE nur in:
 echo     %SQLLABOR_FILES%
 echo.
-echo   Die zwei minimierten Fenster "SQL-Labor ..." muessen offen bleiben.
+echo   Die drei minimierten Fenster "SQL-Labor ..." muessen offen bleiben.
 echo   Beenden: STOPP.bat. Dieses Fenster darf geschlossen werden.
 echo  ======================================================================
 echo.

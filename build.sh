@@ -87,10 +87,10 @@ mkdir -p "$OUT/app/mariadb/lib/plugin"
 cp "$M"/lib/plugin/{caching_sha2_password.dll,client_ed25519.dll,dialog.dll,mysql_clear_password.dll,parsec.dll,sha256_password.dll} \
 	"$OUT/app/mariadb/lib/plugin/"
 
-# PHP: nur der eingebaute Webserver mit mysqli und mbstring.
+# PHP: nur der eingebaute Webserver mit mysqli, pdo_mysql, mbstring und fileinfo.
 # Die Visual-C++-Laufzeit kommt aus dem MariaDB-Paket (keine Installation noetig).
 cp "$P"/{php.exe,php8.dll} "$OUT/app/php/"
-cp "$P"/ext/{php_mysqli.dll,php_mbstring.dll} "$OUT/app/php/ext/"
+cp "$P"/ext/{php_mysqli.dll,php_pdo_mysql.dll,php_mbstring.dll,php_fileinfo.dll} "$OUT/app/php/ext/"
 cp "$M"/bin/{vcruntime140.dll,vcruntime140_1.dll,msvcp140.dll} "$OUT/app/php/"
 
 # phpMyAdmin: nur Deutsch (Englisch ist eingebaut), ohne Setup-Assistent und Beispiele.
@@ -110,7 +110,7 @@ cp "$P/license.txt" "$OUT/app/lizenzen/PHP-LICENSE.txt"
 cp "$PMA/LICENSE" "$OUT/app/lizenzen/phpMyAdmin-LICENSE.txt"
 
 # Platzhalter fuellen
-for f in "$OUT"/*.txt "$OUT"/*.bat "$OUT/app/env.bat" "$OUT/app/phpmyadmin/lizenz.html"; do
+for f in "$OUT"/*.txt "$OUT"/*.bat "$OUT"/app/*.bat "$OUT/app/phpmyadmin/lizenz.html"; do
 	sed -i -e "s/@KIT_VERSION@/$KIT_VERSION/g" -e "s/@MARIADB_VERSION@/$MARIADB_VERSION/g" \
 		-e "s/@PHP_VERSION@/${PHP_VERSION%-*}/g" -e "s/@PMA_VERSION@/$PMA_VERSION/g" \
 		-e "s/@PMA_VERSION_TAG@/${PMA_VERSION//./_}/g" "$f"
@@ -121,10 +121,10 @@ if grep -rl '@[A-Z_]*VERSION[A-Z_]*@' "$OUT" --include='*.txt' --include='*.bat'
 fi
 
 # Windows-Zeilenenden fuer Skripte und Texte
-for f in "$OUT"/*.bat "$OUT"/*.txt "$OUT/app/env.bat" "$OUT/app/php/php.ini" "$OUT/app/sql/init.sql"; do
+for f in "$OUT"/*.bat "$OUT"/*.txt "$OUT"/app/*.bat "$OUT/app/php/php.ini" "$OUT/app/sql/init.sql"; do
 	sed -i 's/\r$//; s/$/\r/' "$f"
 done
-if grep -n -P '[^\x00-\x7F]' "$OUT"/*.bat "$OUT/app/env.bat"; then
+if grep -n -P '[^\x00-\x7F]' "$OUT"/*.bat "$OUT"/app/*.bat; then
 	echo "FEHLER: Batch-Dateien muessen reines ASCII sein (Codepage)" >&2
 	exit 1
 fi

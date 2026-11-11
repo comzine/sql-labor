@@ -4,7 +4,8 @@
 # START.bat (secure-file-priv, myisam-recover-options), Import von northwind und
 # Konfigurationsspeicher, MySQL-Client 8.0/8.4 wie in MySQL Workbench,
 # phpMyAdmin unter PHP 8.5 hinter router.php (Urheberzeile, SQL, Lizenzseite,
-# fremder Host-Kopf = 403, keine PHP-Meldungen).
+# fremder Host-Kopf = 403, keine PHP-Meldungen) und der Webserver fuer die eigenen
+# Seiten der SuS mit der Vorlage aus app/web-vorlage (tests/webseiten_test.sh).
 #
 # Laeuft lokal und in der CI (GitHub Actions, auch mit Docker-Socket im Job-Container).
 # Darum keine Bind-Mounts: deren Pfade kennt der Host-Docker im Runner nicht.
@@ -18,11 +19,13 @@ KIT=$PWD/dist/SQL-Labor
 LAUF=${GITHUB_RUN_ID:-lokal-$$}
 DB=sqllabor-test-db-$LAUF
 WEB=sqllabor-test-web-$LAUF
+SUS=sqllabor-test-sus-$LAUF
 AUSGABE=$(mktemp)
 DATEIEN=$(mktemp -d)
 chmod 777 "$DATEIEN"
+WWW=$(mktemp -d)
 
-aufraeumen() { docker rm -f "$DB" "$WEB" >/dev/null 2>&1 || true; rm -rf "$AUSGABE" "$DATEIEN"; }
+aufraeumen() { docker rm -f "$DB" "$WEB" "$SUS" >/dev/null 2>&1 || true; rm -rf "$AUSGABE" "$DATEIEN" "$WWW"; }
 trap aufraeumen EXIT
 
 docker create --name "$DB" -e MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=1 \
@@ -82,4 +85,31 @@ if docker logs "$WEB" 2>&1 | grep -E -i "deprecated|warning|fatal" | grep -v -E 
 	echo "FEHLER: PHP-Meldungen von phpMyAdmin" >&2
 	exit 1
 fi
+
+# Webserver fuer die eigenen Seiten der SuS: Vorlage, dazu ein Unterordner ohne
+# index (Dateiliste) und eine Seite mit absichtlichem Fehler (Anzeige pruefen).
+cp -r "$KIT/app/web-vorlage/." "$WWW/"
+mkdir -p "$WWW/projekt"
+printf '<?php echo "Aufgabe 1";\n' > "$WWW/projekt/aufgabe1.php"
+printf '<?php echo $nicht_definiert;\n' > "$WWW/fehler.php"
+docker create --name "$SUS" --network "container:$DB" php:8.5-cli \
+	sh -c "docker-php-ext-install mysqli pdo_mysql >/tmp/build.log 2>&1 && php -d display_errors=1 -d error_reporting=E_ALL -S 127.0.0.1:18000 -t /www /router.php" >/dev/null
+docker cp "$WWW" "$SUS:/www"
+docker cp "$KIT/app/router.php" "$SUS:/router.php"
+docker start "$SUS" >/dev/null
+for _ in $(seq 1 120); do
+	docker logs "$SUS" 2>&1 | grep -q "Development Server" && break
+	sleep 2
+done
+docker run --rm -i --network "container:$DB" curlimages/curl:latest sh -s < tests/webseiten_test.sh \
+	| tee "$AUSGABE"
+grep -q "northwind hat 91 Kunden" "$AUSGABE"
+grep -q "11 Kunden in Germany" "$AUSGABE"
+grep -q "Alfreds Futterkiste" "$AUSGABE"
+grep -q "^0 Kunden in" "$AUSGABE"
+grep -q "Statische Seite: 200" "$AUSGABE"
+grep -q "Ohne Schraegstrich: 301 http://127.0.0.1:18000/projekt/" "$AUSGABE"
+grep -q "aufgabe1.php" "$AUSGABE"
+grep -q 'Undefined variable \$nicht_definiert' "$AUSGABE"
+grep -q "Fremder Host-Kopf Webseiten: 403" "$AUSGABE"
 echo "OK: Linux-Test bestanden"

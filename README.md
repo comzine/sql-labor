@@ -3,7 +3,8 @@
 Portable MariaDB mit phpMyAdmin für den SQL-Unterricht an Schul-PCs, auf denen
 XAMPP nicht startet: keine Adminrechte, blockierte Ports, Dienste verboten.
 Ein Ordner, Doppelklick auf `START.bat`, der Browser zeigt phpMyAdmin mit der
-Beispieldatenbank northwind. MySQL Workbench verbindet sich ebenfalls. Keine
+Beispieldatenbank northwind. MySQL Workbench verbindet sich ebenfalls, und ein
+zweiter Webserver liefert eigene HTML- und PHP-Seiten aus. Keine
 Installation, kein Dienst, jeder PC hat seine eigene Datenbank, von außen ist
 nichts erreichbar.
 
@@ -15,7 +16,8 @@ und [kit/LIZENZEN.txt](kit/LIZENZEN.txt).
 > **English summary:** SQL-Labor is a portable MariaDB + phpMyAdmin kit for
 > teaching SQL on locked-down school PCs (Windows, no admin rights) where XAMPP
 > fails. Unzip, run `START.bat`, and phpMyAdmin opens with the northwind sample
-> database; MySQL Workbench can connect too. Everything listens on `127.0.0.1`
+> database; MySQL Workbench can connect too, and a second PHP web server serves
+> students' own HTML/PHP pages. Everything listens on `127.0.0.1`
 > only. The user interface and documentation are in German.
 
 ## Für wen
@@ -37,6 +39,19 @@ an Schul-PCs mit Windows 11 und linuxmuster.net; Rückmeldungen willkommen.
 `TEST.bat` prüft einen PC (Programmstart, PHP, Datenablage, Webserver) und
 schreibt `testprotokoll.txt`. Die ausführliche Anleitung für Lehrkräfte und
 SuS steht in [kit/LIESMICH.txt](kit/LIESMICH.txt).
+
+### Eigene Webseiten (HTML, PHP, MySQL)
+
+`START.bat` startet einen zweiten PHP-Webserver unter <http://127.0.0.1:18000/>
+für den Ordner `Dokumente\SQL-Labor-Web` (anderer Ordner per `WEBORDNER.txt`).
+Beim ersten Start legt das Kit dort eine Startseite mit Dateiliste und DB-Test,
+eine HTML-Seite und ein PDO-Beispiel mit Prepared Statement an; danach bleibt
+der Ordner unberührt. PHP-Fehler werden angezeigt, Ordner ohne `index` zeigen
+eine Dateiliste. `WEB.bat` öffnet Ordner und Browser. Verbindung aus PHP:
+
+```php
+$db = new PDO('mysql:host=127.0.0.1;port=13306;dbname=northwind;charset=utf8mb4', 'sus', 'sus');
+```
 
 ### MySQL Workbench
 
@@ -60,7 +75,7 @@ gehört nicht ungekürzt in ein öffentliches Issue.
 |------|---------|--------|
 | SQL-Labor (Skripte, Konfiguration, Anleitungen) | siehe `VERSION` | MIT |
 | MariaDB Server (winx64, gekürzt) | 12.3.3 LTS | GPLv2 |
-| PHP (NTS x64, nur `php.exe`, mysqli, mbstring) | 8.5.12 | PHP License 3.01 |
+| PHP (NTS x64, nur `php.exe`, mysqli, pdo_mysql, mbstring, fileinfo) | 8.5.12 | PHP License 3.01 |
 | phpMyAdmin (nur Deutsch, ohne Setup) | 5.2.3 | GPLv2 |
 | northwind (MySQL-Fassung, aus Microsofts Original umgewandelt) | – | MIT, © Microsoft |
 
@@ -84,7 +99,10 @@ kit/                    eigene Dateien, landen 1:1 im Kit
   LIESMICH.txt          Anleitung für Lehrkräfte und SuS
   LIZENZEN.txt          Urheber, Lizenzen, Quelltexte
   app/env.bat           gemeinsame Einstellungen (Ports, Benutzer, Datenort)
-  app/router.php        Host-Prüfung vor phpMyAdmin (DNS-Rebinding)
+  WEB.bat               Webordner und eigene Seiten im Browser öffnen
+  app/router.php        Host-Prüfung (DNS-Rebinding) und Dateiliste für beide Webserver
+  app/webordner.bat     Webordner ermitteln (Dokumente oder WEBORDNER.txt)
+  app/web-vorlage/      Startdateien für den Webordner
   app/phpmyadmin/       config.inc.php (Auto-Login), config.footer.inc.php, lizenz.html
   app/sql/init.sql      Benutzer sus (mysql_native_password für Workbench)
   app/sql/northwind.sql
@@ -104,7 +122,9 @@ tests/                  Linux-Test mit Docker
 
 Der Linux-Test prüft MariaDB 12.3 mit den Serveroptionen aus `START.bat`
 (`secure_file_priv`, Anmeldeverfahren), den MySQL-Client 8.0 und 8.4 (wie in
-Workbench) und phpMyAdmin unter PHP 8.5 hinter `router.php`. Die `.bat`-Skripte
+Workbench), phpMyAdmin unter PHP 8.5 hinter `router.php` und den Webserver für
+eigene Seiten mit der Vorlage (PDO, SQL-Injection-Versuch, Dateiliste, sichtbare
+Fehler). Die `.bat`-Skripte
 prüft er nicht; dafür `TEST.bat` an einem Windows-PC.
 
 ## CI und Releases
